@@ -36,6 +36,7 @@
 
 ### Día 1 — Fork, exec y el árbol de procesos
 **Concepto:** en Linux todo proceso nuevo nace de `fork()` (copia el proceso padre) seguido normalmente de `exec()` (reemplaza la imagen de memoria por un nuevo programa). Entender esto es la base de por qué `clone()` (que usan los contenedores) es "fork con esteroides": permite especificar *qué* se comparte con el hijo (memoria, namespaces, etc.) mediante flags.
+**Guía:** [Día 1: fork, clone, exec y árbol de procesos](../dia-01/README.md)
 **Actividades:**
 - Leer `man fork`, `man execve`, `man clone`.
 - Escribir un programa pequeño en Go usando `os/exec` que lance un subproceso y capture su PID.
