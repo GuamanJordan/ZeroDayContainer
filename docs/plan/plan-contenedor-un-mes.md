@@ -9,6 +9,104 @@
 
 ---
 
+## Estrategia de ramas: genealogía lineal y contaminación 0
+
+**Objetivo:** que cada entrega nazca de la versión estable anterior, se valide de forma aislada y llegue a `main` sin mezclar código incompleto de otros días.
+
+**Documentos de soporte:**
+
+- [Estrategia de ramas](../branching/linear-genealogy.md)
+- [Checklist de Pull Request](../pr/pr-checklist.md)
+- [ADR 0001: Modelo de ramas con genealogía lineal](../adr/0001-linear-branching-model.md)
+
+### Regla central
+
+- `main` es la única línea estable y la única rama permanente.
+- Se trabaja con una sola rama activa por entrega diaria.
+- Cada rama debe crearse desde `main` actualizado, no desde otra rama de trabajo.
+- Una rama se integra solo si build, lint y tests aplicables están verdes.
+- Después de integrar una rama, se borra y la siguiente rama nace del nuevo `main`.
+- No se hacen merges entre ramas `docs/*`, `feat/*`, `test/*`, `hardening/*` o `release/*`.
+- No se arrastra trabajo parcial: si una tarea no cierra, se documenta en el PR y se separa en una rama nueva posterior.
+
+### Flujo obligatorio por entrega
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c tipo/NN-descripcion-corta
+
+# implementar solo el entregable del día
+go build ./...
+go test ./...
+
+git push -u origin tipo/NN-descripcion-corta
+# abrir PR hacia main
+# integrar con squash merge o rebase + fast-forward
+
+git switch main
+git pull --ff-only
+git branch -d tipo/NN-descripcion-corta
+```
+
+### Genealogía esperada
+
+```text
+main: A0 -- A1 -- A2 -- A3 -- A4
+       \     \     \     \
+        \     \     \     feat/03-clone-pid-uts -> squash/rebase -> A4
+         \     \     docs/02-namespaces-manual -> squash/rebase -> A3
+          \     docs/01-fork-clone-exec -> squash/rebase -> A2
+           feat/00-setup-entorno -> squash/rebase -> A1
+```
+
+Cada rama temporal nace del último commit estable de `main`; al integrarse, produce el siguiente commit lineal.
+
+### Ramas que debes crear según el cronograma
+
+| Orden | Rama | Entregable |
+| --- | --- | --- |
+| 00 | `feat/00-setup-entorno` | Repo base, estructura inicial, Makefile y CI vacío con `go build`. |
+| 01 | `docs/01-fork-clone-exec` | Notas README sobre `fork`, `clone` y `exec`. |
+| 02 | `docs/02-namespaces-manual` | Logs/capturas documentadas de exploración manual de namespaces. |
+| 03 | `feat/03-clone-pid-uts` | `mc run-basic` con PID namespace y UTS namespace. |
+| 04 | `feat/04-mount-proc` | Mount namespace y `/proc` propio dentro del proceso aislado. |
+| 05 | `test/05-ci-unit-lint` | Tests unitarios, `go vet`, `go test`, `golangci-lint` y badge CI. |
+| 06 | `feat/06-chroot-demo` | Demo de `chroot` y documentación de limitaciones. |
+| 07 | `feat/07-pivot-root` | `pivot_root` integrado como base de `mc run`. |
+| 08 | `feat/08-essential-mounts` | Montajes de `/proc`, `/sys` y `/dev` mínimos. |
+| 09 | `test/09-integration-ci` | Job de integración con tests privilegiados y build tag `integration`. |
+| 10 | `hardening/10-filesystem-cleanup` | Rootfs opcional de solo lectura, desmontajes seguros y limpieza de errores. |
+| 11 | `docs/11-cgroups-v2` | Demo manual y notas sobre cgroups v2. |
+| 12 | `feat/12-cgroups-limits` | Límites de memoria, CPU y PIDs desde Go. |
+| 13 | `hardening/13-capabilities` | Reducción de capabilities antes del `execve` final. |
+| 14 | `feat/14-network-veth` | Network namespace, veth pair y ping host-contenedor. |
+| 15 | `feat/15-bridge-nat` | Bridge `mc0`, NAT y salida a internet. |
+| 16 | `feat/16-cli-design` | Subcomandos `run`, `list`, `exec` y estructura de CLI. |
+| 17 | `feat/17-setns-exec` | `mc exec` con `setns` hacia namespaces existentes. |
+| 18 | `feat/18-overlayfs-layers` | Overlayfs opcional para capas base y capas de escritura. |
+| 19 | `hardening/19-security-threat-model` | `gosec`, `no_new_privs`, revisión de mounts y `THREAT_MODEL.md`. |
+| 20 | `release/20-v0.1.0` | Pipeline final, README completo, tag `v0.1.0` y binarios release. |
+
+### Reglas de contaminación 0
+
+- Una rama solo puede modificar archivos relacionados con su entregable.
+- Si un cambio toca una fase futura, se mueve a una rama futura y no entra en el PR actual.
+- Los documentos (`docs/*`) no deben incluir implementación.
+- Las ramas `test/*` no deben introducir features nuevas salvo lo mínimo necesario para probar lo ya integrado.
+- Las ramas `hardening/*` no deben cambiar comportamiento funcional sin test o nota explícita.
+- La rama `release/20-v0.1.0` no debe aceptar features nuevas; solo empaquetado, documentación final y fixes bloqueantes.
+- Todo PR debe incluir: objetivo, archivos tocados, comando de validación ejecutado y riesgos conocidos.
+
+### Criterio de integración
+
+- Días 01-04: `go build ./...` y tests unitarios existentes.
+- Días 05-08: `go build ./...`, `go vet ./...`, `go test ./...`.
+- Días 09-17: unitarios verdes + integración aplicable con `sudo go test ./test/integration/... -tags=integration -v`.
+- Días 18-20: pipeline completo verde antes de etiquetar `v0.1.0`.
+
+---
+
 ## Semana 0 (previa, medio día): Setup del entorno
 
 - [ ] Instalar Go 1.22+, `strace`, `iproute2`, `util-linux` (para `unshare`, `nsenter`, `setarch`).
