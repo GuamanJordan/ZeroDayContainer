@@ -42,5 +42,5 @@ func main() {
 func printUsage() {
 	fmt.Println("uso: mc <comando> [argumentos]")
 	fmt.Println("comandos disponibles:")
-	fmt.Println("  run-basic <comando> [args...]   Lanza un subproceso aislado en UTS y PID namespaces")
+	fmt.Println("  run-basic <comando> [args...]   Lanza un subproceso aislado en UTS, PID y Mount namespaces")
 }

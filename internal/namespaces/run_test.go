@@ -13,7 +13,7 @@ func TestGetBasicSysProcAttr(t *testing.T) {
 	}
 
 	if runtime.GOOS == "linux" {
-		expected := uintptr(syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID)
+		expected := uintptr(syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS)
 		if attr.Cloneflags != expected {
 			t.Errorf("se esperaba Cloneflags=%v, se obtuvo=%v", expected, attr.Cloneflags)
 		}
