@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 )
 
 // GetBasicSysProcAttr retorna la configuración SysProcAttr con las flags
@@ -25,6 +27,25 @@ func RunBasic(cmdPath string, args []string) error {
 	}
 
 	cmd := exec.Command("/proc/self/exe", append([]string{"child-init", cmdPath}, args...)...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	cmd.SysProcAttr = GetBasicSysProcAttr()
+
+	return cmd.Run()
+}
+
+// RunChroot lanza `cmdPath args...` cambiando la raíz del sistema de archivos al directorio rootfs.
+func RunChroot(newRoot string, cmdPath string, args []string) error {
+	if newRoot == "" {
+		return fmt.Errorf("se debe especificar la ruta del rootfs")
+	}
+	if cmdPath == "" {
+		return fmt.Errorf("se debe especificar un comando para ejecutar")
+	}
+
+	cmd := exec.Command("/proc/self/exe", append([]string{"child-init-chroot", newRoot, cmdPath}, args...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -55,6 +76,40 @@ func ChildInit(cmdPath string, args []string) error {
 	}
 
 	// 4. Ejecutar el comando final solicitado por el usuario
+	cmd := exec.Command(cmdPath, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// ChildInitChroot se ejecuta dentro del nuevo namespace, aplica chroot sobre newRoot y ejecuta el comando.
+func ChildInitChroot(newRoot string, cmdPath string, args []string) error {
+	if newRoot == "" {
+		return fmt.Errorf("se debe especificar la ruta del rootfs")
+	}
+	if cmdPath == "" {
+		return fmt.Errorf("se debe especificar un comando para ejecutar dentro del contenedor")
+	}
+
+	// 1. Configurar hostname en el UTS namespace
+	if err := syscall.Sethostname([]byte("zerodaycontainer")); err != nil {
+		return fmt.Errorf("sethostname: %w", err)
+	}
+
+	// 2. Aplicar chroot a newRoot
+	if err := rootfs.ApplyChroot(newRoot); err != nil {
+		return fmt.Errorf("aplicar chroot: %w", err)
+	}
+
+	// 3. Asegurar montajes privados y montar /proc dentro del nuevo rootfs
+	_ = syscall.Mount("", "/", "", syscall.MS_REC|syscall.MS_PRIVATE, "")
+	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
+		return fmt.Errorf("mount /proc dentro del chroot: %w", err)
+	}
+
+	// 4. Ejecutar el comando final solicitado
 	cmd := exec.Command(cmdPath, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
