@@ -1,0 +1,61 @@
+# ZeroDayContainer (`mc`)
+
+[![CI](https://github.com/GuamanJordan/ZeroDayContainer/actions/workflows/ci.yml/badge.svg)](https://github.com/GuamanJordan/ZeroDayContainer/actions/workflows/ci.yml)
+![Go Version](https://img.shields.io/badge/go-1.22%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+Runtime de contenedores ligero escrito en Go desde cero, diseñado para aislar procesos en Linux utilizando **Namespaces**, **Cgroups v2**, **Capabilities** y **OverlayFS**, sin depender de Docker ni `runc`.
+
+---
+
+## 🚀 Características y Roadmap
+
+Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de Implementación](docs/plan/plan-contenedor-un-mes.md)):
+
+- [x] **Día 01:** Análisis de `fork`, `execve` y `clone`.
+- [x] **Día 02:** Exploración manual de los 7+1 Namespaces de Linux.
+- [x] **Día 03:** Aislamiento de UTS (hostname) y PID (proceso PID 1).
+- [x] **Día 04:** Aislamiento de Mount namespace (`CLONE_NEWNS`) y `/proc` privado.
+- [x] **Día 05:** CI Workflow, pruebas unitarias y linting.
+- [ ] **Próximos días:** `chroot`, `pivot_root`, Cgroups v2, Capabilities, veth pairs y OverlayFS.
+
+---
+
+## 🛠️ Uso de la CLI (`mc`)
+
+### Requisitos
+- Linux con kernel ≥ 5.x y privilegios de `root` (o WSL2 con systemd).
+- Go 1.22+.
+
+### Compilación
+
+```bash
+go build -o mc ./cmd/mc
+```
+
+### Ejecutar un comando aislado (UTS, PID, Mount)
+
+```bash
+sudo ./mc run-basic /bin/bash
+```
+
+Dentro del contenedor:
+- `hostname` mostrará `zerodaycontainer`.
+- `ps aux` solo mostrará los procesos aislados dentro del contenedor (con `bash` como **PID 1**).
+
+---
+
+## 🧪 Pruebas y Calidad de Código
+
+Ejecutar las pruebas unitarias y linters locales:
+
+```bash
+go vet ./...
+go test ./... -v -race -cover
+```
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT.
