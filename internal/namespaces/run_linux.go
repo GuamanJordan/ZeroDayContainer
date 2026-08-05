@@ -137,7 +137,7 @@ func ChildInitChroot(newRoot string, cmdPath string, args []string) error {
 	return cmd.Run()
 }
 
-// ChildInitPivotRoot se ejecuta dentro del nuevo namespace, aplica pivot_root sobre newRoot y ejecuta el comando.
+// ChildInitPivotRoot se ejecuta dentro del nuevo namespace, aplica pivot_root y monta /proc, /sys, /dev y /dev/pts.
 func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
 	if newRoot == "" {
 		return fmt.Errorf("se debe especificar la ruta del rootfs")
@@ -156,9 +156,9 @@ func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
 		return fmt.Errorf("aplicar pivot_root: %w", err)
 	}
 
-	// 3. Montar /proc privado dentro del nuevo rootfs pivotado
-	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
-		return fmt.Errorf("mount /proc dentro de pivot_root: %w", err)
+	// 3. Montar sistemas de archivos esenciales (/proc, /sys, /dev, /dev/pts) dentro del rootfs pivotado
+	if err := rootfs.MountEssentialFilesystems(); err != nil {
+		return fmt.Errorf("montar sistemas de archivos esenciales: %w", err)
 	}
 
 	// 4. Ejecutar el comando final solicitado
