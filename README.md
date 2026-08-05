@@ -20,7 +20,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 06:** Aislamiento del sistema de archivos con `chroot`.
 - [x] **Día 07:** Reemplazo de la raíz en contenedores con `pivot_root`.
 - [x] **Día 08:** Montajes de pseudo-sistemas de archivos esenciales (`/proc`, `/sys`, `/dev`, `/dev/pts`).
-- [ ] **Próximos días:** Integration tests en CI, Cgroups v2, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 09:** Pruebas de integración privilegiadas y job en CI.
+- [ ] **Próximos días:** Desmontajes seguros/hardening, Cgroups v2, Capabilities, veth pairs y OverlayFS.
 
 ---
 
@@ -58,11 +59,15 @@ sudo ./mc run-basic /bin/bash
 
 ## 🧪 Pruebas y Calidad de Código
 
-Ejecutar las pruebas unitarias y linters locales:
-
+### Pruebas Unitarias y Linters
 ```bash
 go vet ./...
 go test ./... -v -race -cover
+```
+
+### Pruebas de Integración (Privilegiadas)
+```bash
+sudo go test ./test/integration/... -tags=integration -v
 ```
 
 ---
