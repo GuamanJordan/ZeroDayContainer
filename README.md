@@ -19,7 +19,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 05:** CI Workflow, pruebas unitarias y linting.
 - [x] **Día 06:** Aislamiento del sistema de archivos con `chroot`.
 - [x] **Día 07:** Reemplazo de la raíz en contenedores con `pivot_root`.
-- [ ] **Próximos días:** Montajes esenciales (`/sys`, `/dev`), Cgroups v2, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 08:** Montajes de pseudo-sistemas de archivos esenciales (`/proc`, `/sys`, `/dev`, `/dev/pts`).
+- [ ] **Próximos días:** Integration tests en CI, Cgroups v2, Capabilities, veth pairs y OverlayFS.
 
 ---
 
@@ -45,6 +46,7 @@ Dentro del contenedor:
 - `hostname` mostrará `zerodaycontainer`.
 - `ps aux` solo mostrará los procesos aislados del contenedor (con `sh` como **PID 1**).
 - `ls /` mostrará el sistema de archivos raíz del rootfs sin acceso a la raíz del host.
+- `/proc`, `/sys`, `/dev` y `/dev/pts` estarán correctamente montados y disponibles.
 
 ### Ejecutar subproceso básico aislado (UTS, PID, Mount)
 

@@ -1,0 +1,71 @@
+//go:build linux
+
+package rootfs
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"syscall"
+)
+
+// MountSpec define la estructura para especificar un montaje pseudo o de sistema de archivos.
+type MountSpec struct {
+	Source string
+	Target string
+	FSType string
+	Flags  uintptr
+	Data   string
+}
+
+// GetEssentialMounts retorna la lista ordenada de montajes esenciales para un contenedor (/proc, /sys, /dev, /dev/pts).
+func GetEssentialMounts() []MountSpec {
+	return []MountSpec{
+		{Source: "proc", Target: "/proc", FSType: "proc", Flags: 0, Data: ""},
+		{Source: "sysfs", Target: "/sys", FSType: "sysfs", Flags: 0, Data: ""},
+		{Source: "tmpfs", Target: "/dev", FSType: "tmpfs", Flags: syscall.MS_NOSUID | syscall.MS_STRICTATIME, Data: "mode=755"},
+		{Source: "devpts", Target: "/dev/pts", FSType: "devpts", Flags: 0, Data: "newinstance,ptmxmode=0666,mode=0620,gid=5"},
+	}
+}
+
+// MountEssentialFilesystems crea los directorios destino y monta los sistemas de archivos virtuales
+// indispensables dentro del contenedor (/proc, /sys, /dev y /dev/pts).
+func MountEssentialFilesystems() error {
+	for _, m := range GetEssentialMounts() {
+		if err := os.MkdirAll(m.Target, 0755); err != nil {
+			return fmt.Errorf("mkdir '%s': %w", m.Target, err)
+		}
+		if err := syscall.Mount(m.Source, m.Target, m.FSType, m.Flags, m.Data); err != nil {
+			return fmt.Errorf("mount %s en %s (%s): %w", m.Source, m.Target, m.FSType, err)
+		}
+	}
+
+	if err := createEssentialDevNodes(); err != nil {
+		return fmt.Errorf("crear nodos en /dev: %w", err)
+	}
+
+	return nil
+}
+
+// createEssentialDevNodes crea los enlaces simbólicos y nodos básicos en /dev.
+func createEssentialDevNodes() error {
+	devices := []string{"null", "zero", "random", "urandom", "tty"}
+
+	for _, dev := range devices {
+		targetDev := filepath.Join("/dev", dev)
+		f, err := os.Create(targetDev)
+		if err == nil {
+			f.Close()
+			_ = syscall.Mount(filepath.Join("/proc/kcore"), targetDev, "", syscall.MS_BIND, "")
+		}
+	}
+
+	// Enlaces simbólicos para descriptores estándar
+	_ = os.Symlink("/proc/self/fd", "/dev/fd")
+	_ = os.Symlink("/proc/self/fd/0", "/dev/stdin")
+	_ = os.Symlink("/proc/self/fd/1", "/dev/stdout")
+	_ = os.Symlink("/proc/self/fd/2", "/dev/stderr")
+	_ = os.Symlink("/dev/pts/ptmx", "/dev/ptmx")
+
+	return nil
+}
