@@ -17,7 +17,9 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 03:** Aislamiento de UTS (hostname) y PID (proceso PID 1).
 - [x] **Día 04:** Aislamiento de Mount namespace (`CLONE_NEWNS`) y `/proc` privado.
 - [x] **Día 05:** CI Workflow, pruebas unitarias y linting.
-- [ ] **Próximos días:** `chroot`, `pivot_root`, Cgroups v2, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 06:** Aislamiento del sistema de archivos con `chroot`.
+- [x] **Día 07:** Reemplazo de la raíz en contenedores con `pivot_root`.
+- [ ] **Próximos días:** Montajes esenciales (`/sys`, `/dev`), Cgroups v2, Capabilities, veth pairs y OverlayFS.
 
 ---
 
@@ -33,15 +35,22 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 go build -o mc ./cmd/mc
 ```
 
-### Ejecutar un comando aislado (UTS, PID, Mount)
+### Ejecutar un contenedor completo con `pivot_root` (`mc run`)
 
 ```bash
-sudo ./mc run-basic /bin/bash
+sudo ./mc run /tmp/alpine-rootfs /bin/sh
 ```
 
 Dentro del contenedor:
 - `hostname` mostrará `zerodaycontainer`.
-- `ps aux` solo mostrará los procesos aislados dentro del contenedor (con `bash` como **PID 1**).
+- `ps aux` solo mostrará los procesos aislados del contenedor (con `sh` como **PID 1**).
+- `ls /` mostrará el sistema de archivos raíz del rootfs sin acceso a la raíz del host.
+
+### Ejecutar subproceso básico aislado (UTS, PID, Mount)
+
+```bash
+sudo ./mc run-basic /bin/bash
+```
 
 ---
 

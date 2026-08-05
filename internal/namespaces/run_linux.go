@@ -36,7 +36,7 @@ func RunBasic(cmdPath string, args []string) error {
 	return cmd.Run()
 }
 
-// RunChroot lanza `cmdPath args...` cambiando la raíz del sistema de archivos al directorio rootfs.
+// RunChroot lanza `cmdPath args...` cambiando la raíz del sistema de archivos al directorio rootfs usando chroot.
 func RunChroot(newRoot string, cmdPath string, args []string) error {
 	if newRoot == "" {
 		return fmt.Errorf("se debe especificar la ruta del rootfs")
@@ -46,6 +46,25 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 	}
 
 	cmd := exec.Command("/proc/self/exe", append([]string{"child-init-chroot", newRoot, cmdPath}, args...)...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	cmd.SysProcAttr = GetBasicSysProcAttr()
+
+	return cmd.Run()
+}
+
+// RunPivotRoot lanza `cmdPath args...` aislando el sistema de archivos raíz mediante pivot_root.
+func RunPivotRoot(newRoot string, cmdPath string, args []string) error {
+	if newRoot == "" {
+		return fmt.Errorf("se debe especificar la ruta del rootfs")
+	}
+	if cmdPath == "" {
+		return fmt.Errorf("se debe especificar un comando para ejecutar")
+	}
+
+	cmd := exec.Command("/proc/self/exe", append([]string{"child-init-pivot", newRoot, cmdPath}, args...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -107,6 +126,39 @@ func ChildInitChroot(newRoot string, cmdPath string, args []string) error {
 	_ = syscall.Mount("", "/", "", syscall.MS_REC|syscall.MS_PRIVATE, "")
 	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
 		return fmt.Errorf("mount /proc dentro del chroot: %w", err)
+	}
+
+	// 4. Ejecutar el comando final solicitado
+	cmd := exec.Command(cmdPath, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// ChildInitPivotRoot se ejecuta dentro del nuevo namespace, aplica pivot_root sobre newRoot y ejecuta el comando.
+func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
+	if newRoot == "" {
+		return fmt.Errorf("se debe especificar la ruta del rootfs")
+	}
+	if cmdPath == "" {
+		return fmt.Errorf("se debe especificar un comando para ejecutar dentro del contenedor")
+	}
+
+	// 1. Configurar hostname en el UTS namespace
+	if err := syscall.Sethostname([]byte("zerodaycontainer")); err != nil {
+		return fmt.Errorf("sethostname: %w", err)
+	}
+
+	// 2. Aplicar pivot_root a newRoot (desvincula la raíz vieja del host)
+	if err := rootfs.ApplyPivotRoot(newRoot); err != nil {
+		return fmt.Errorf("aplicar pivot_root: %w", err)
+	}
+
+	// 3. Montar /proc privado dentro del nuevo rootfs pivotado
+	if err := syscall.Mount("proc", "/proc", "proc", 0, ""); err != nil {
+		return fmt.Errorf("mount /proc dentro de pivot_root: %w", err)
 	}
 
 	// 4. Ejecutar el comando final solicitado
