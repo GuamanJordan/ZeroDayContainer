@@ -32,6 +32,15 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
+	case "run", "run-pivot":
+		if len(os.Args) < 4 {
+			printUsage()
+			os.Exit(1)
+		}
+		if err := namespaces.RunPivotRoot(os.Args[2], os.Args[3], os.Args[4:]); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
 	case "child-init":
 		if len(os.Args) < 3 {
 			printUsage()
@@ -50,6 +59,15 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
+	case "child-init-pivot":
+		if len(os.Args) < 4 {
+			printUsage()
+			os.Exit(1)
+		}
+		if err := namespaces.ChildInitPivotRoot(os.Args[2], os.Args[3], os.Args[4:]); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Println("comando desconocido:", os.Args[1])
 		printUsage()
@@ -60,6 +78,7 @@ func main() {
 func printUsage() {
 	fmt.Println("uso: mc <comando> [argumentos]")
 	fmt.Println("comandos disponibles:")
+	fmt.Println("  run <rootfs_path> <comando> [args...]       Lanza un contenedor completo aislado con pivot_root")
 	fmt.Println("  run-basic <comando> [args...]             Lanza un subproceso aislado en UTS, PID y Mount namespaces")
-	fmt.Println("  run-chroot <rootfs_path> <comando> [args...] Lanza un proceso aislado con chroot en el rootfs especificado")
+	fmt.Println("  run-chroot <rootfs_path> <comando> [args...] Lanza un proceso aislado con chroot")
 }
