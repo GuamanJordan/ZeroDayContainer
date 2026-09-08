@@ -70,6 +70,7 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 type ContainerOpts struct {
 	ReadOnly  bool
 	EnableNet bool
+	EnableNAT bool
 	Cgroups   cgroups.Config
 }
 
@@ -105,7 +106,7 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if opts.EnableNet {
+	if opts.EnableNet || opts.EnableNAT {
 		cmd.SysProcAttr = GetNetworkSysProcAttr()
 	} else {
 		cmd.SysProcAttr = GetBasicSysProcAttr()
@@ -140,13 +141,20 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 		}
 	}
 
-	// Configurar red veth si se activó el flag
-	if opts.EnableNet {
+	// Configurar red veth y bridge/NAT si se activó
+	if opts.EnableNet || opts.EnableNAT {
 		netCfg := network.DefaultNetworkConfig(fmt.Sprintf("%d", cmd.Process.Pid))
 		_ = network.SetupVethPair(cmd.Process.Pid, netCfg)
 		defer func() {
 			_ = network.CleanupVethPair(netCfg.HostVethName)
 		}()
+
+		if opts.EnableNAT {
+			_ = network.SetupBridge(network.DefaultBridgeName, network.DefaultBridgeIP)
+			_ = network.AttachToBridge(netCfg.HostVethName, network.DefaultBridgeName)
+			_ = network.EnableNAT(network.DefaultSubnet, network.DefaultBridgeName)
+			_ = network.SetupDefaultGateway(cmd.Process.Pid, network.DefaultGatewayIP)
+		}
 	}
 
 	return cmd.Wait()
