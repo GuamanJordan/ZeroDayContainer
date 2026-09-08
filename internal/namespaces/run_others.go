@@ -24,6 +24,13 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar chroot")
 }
 
+// ContainerOpts define las opciones de aislamiento.
+type ContainerOpts struct {
+	ReadOnly  bool
+	EnableNet bool
+	Cgroups   cgroups.Config
+}
+
 // RunPivotRoot en sistemas no-Linux retorna un error de incompatibilidad.
 func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar pivot_root")
@@ -32,6 +39,11 @@ func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) 
 // RunPivotRootWithCgroups en sistemas no-Linux retorna un error de incompatibilidad.
 func RunPivotRootWithCgroups(newRoot string, readOnly bool, cgCfg cgroups.Config, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar cgroups y pivot_root")
+}
+
+// RunPivotRootWithOptions en sistemas no-Linux retorna un error de incompatibilidad.
+func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string, args []string) error {
+	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar pivot_root con opciones")
 }
 
 // ChildInit en sistemas no-Linux retorna un error indicando que se requiere Linux.
