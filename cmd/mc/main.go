@@ -37,12 +37,16 @@ func main() {
 		}
 	case "run", "run-pivot":
 		readOnly := false
+		enableNet := false
 		var cgCfg cgroups.Config
 		i := 2
 		for i < len(os.Args) {
 			arg := os.Args[i]
 			if arg == "--read-only" || arg == "-ro" {
 				readOnly = true
+				i++
+			} else if arg == "--net" {
+				enableNet = true
 				i++
 			} else if strings.HasPrefix(arg, "--memory=") {
 				cgCfg.MemoryLimit = strings.TrimPrefix(arg, "--memory=")
@@ -70,7 +74,12 @@ func main() {
 		rootfsPath := os.Args[i]
 		cmdPath := os.Args[i+1]
 		cmdArgs := os.Args[i+2:]
-		if err := namespaces.RunPivotRootWithCgroups(rootfsPath, readOnly, cgCfg, cmdPath, cmdArgs); err != nil {
+		opts := namespaces.ContainerOpts{
+			ReadOnly:  readOnly,
+			EnableNet: enableNet,
+			Cgroups:   cgCfg,
+		}
+		if err := namespaces.RunPivotRootWithOptions(rootfsPath, opts, cmdPath, cmdArgs); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
@@ -123,6 +132,7 @@ func printUsage() {
 	fmt.Println("  run [opciones] <rootfs_path> <comando> [args...] Lanza un contenedor completo aislado con pivot_root")
 	fmt.Println("    Opciones:")
 	fmt.Println("      --read-only, -ro           Monta el rootfs en modo solo lectura")
+	fmt.Println("      --net                      Aísla la red con network namespace y par de interfaces veth")
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")
 	fmt.Println("      --cpus=<cores>             Límite de CPU cores (ej: 0.5, 1.0)")
 	fmt.Println("      --pids=<max>               Límite de procesos concurrentes (ej: 50)")

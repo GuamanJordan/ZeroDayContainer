@@ -25,7 +25,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 11:** Teoría y exploración manual de Cgroups v2.
 - [x] **Día 12:** Control de recursos (memoria, CPU, PIDs) con Cgroups v2 desde Go.
 - [x] **Día 13:** Reducción de Linux Capabilities y activación de `no_new_privs`.
-- [ ] **Próximos días:** Network namespaces, veth pairs, bridge NAT y OverlayFS.
+- [x] **Día 14:** Network namespace, veth pair y conectividad host-contenedor.
+- [ ] **Próximos días:** Bridge mc0, NAT para salida a internet y OverlayFS.
 
 ---
 
@@ -52,6 +53,9 @@ sudo ./mc run --read-only /tmp/alpine-rootfs /bin/sh
 
 # Con límites de recursos (cgroups v2: memoria, CPU, PIDs)
 sudo ./mc run --memory=100m --cpus=0.5 --pids=30 /tmp/alpine-rootfs /bin/sh
+
+# Con pila de red aislada y veth pair (--net)
+sudo ./mc run --net /tmp/alpine-rootfs /bin/sh
 ```
 
 Dentro del contenedor:
