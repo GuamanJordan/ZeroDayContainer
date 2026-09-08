@@ -83,7 +83,7 @@ func New(name string) (*Cgroup, error) {
 	}
 
 	cgPath := filepath.Join(cgroupRoot, name)
-	if err := os.MkdirAll(cgPath, 0755); err != nil {
+	if err := os.MkdirAll(cgPath, 0750); err != nil {
 		return nil, fmt.Errorf("crear cgroup en '%s': %w", cgPath, err)
 	}
 
@@ -103,7 +103,7 @@ func (cg *Cgroup) ApplyLimits(cfg Config) error {
 		}
 		if memBytes > 0 {
 			memFile := filepath.Join(cg.Path, "memory.max")
-			if err := os.WriteFile(memFile, []byte(strconv.FormatInt(memBytes, 10)), 0644); err != nil {
+			if err := os.WriteFile(memFile, []byte(strconv.FormatInt(memBytes, 10)), 0600); err != nil {
 				return fmt.Errorf("escribir memory.max: %w", err)
 			}
 		}
@@ -116,7 +116,7 @@ func (cg *Cgroup) ApplyLimits(cfg Config) error {
 			return err
 		}
 		cpuFile := filepath.Join(cg.Path, "cpu.max")
-		if err := os.WriteFile(cpuFile, []byte(cpuVal), 0644); err != nil {
+		if err := os.WriteFile(cpuFile, []byte(cpuVal), 0600); err != nil {
 			return fmt.Errorf("escribir cpu.max: %w", err)
 		}
 	}
@@ -124,7 +124,7 @@ func (cg *Cgroup) ApplyLimits(cfg Config) error {
 	// 3. Límite de PIDs (pids.max)
 	if cfg.PIDsLimit > 0 {
 		pidsFile := filepath.Join(cg.Path, "pids.max")
-		if err := os.WriteFile(pidsFile, []byte(strconv.FormatInt(cfg.PIDsLimit, 10)), 0644); err != nil {
+		if err := os.WriteFile(pidsFile, []byte(strconv.FormatInt(cfg.PIDsLimit, 10)), 0600); err != nil {
 			return fmt.Errorf("escribir pids.max: %w", err)
 		}
 	}
@@ -135,7 +135,7 @@ func (cg *Cgroup) ApplyLimits(cfg Config) error {
 // AddProcess añade el PID indicado al archivo cgroup.procs.
 func (cg *Cgroup) AddProcess(pid int) error {
 	procsFile := filepath.Join(cg.Path, "cgroup.procs")
-	if err := os.WriteFile(procsFile, []byte(strconv.Itoa(pid)), 0644); err != nil {
+	if err := os.WriteFile(procsFile, []byte(strconv.Itoa(pid)), 0600); err != nil {
 		return fmt.Errorf("añadir pid %d a cgroup.procs: %w", pid, err)
 	}
 	return nil

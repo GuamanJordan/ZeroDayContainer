@@ -78,7 +78,7 @@ func EnableNAT(subnet, bridgeName string) error {
 	}
 
 	// 1. Habilitar ip_forward en el kernel
-	if err := os.WriteFile("/proc/sys/net/ipv4/ip_forward", []byte("1\n"), 0644); err != nil {
+	if err := os.WriteFile("/proc/sys/net/ipv4/ip_forward", []byte("1\n"), 0600); err != nil {
 		_ = exec.Command("sysctl", "-w", "net.ipv4.ip_forward=1").Run()
 	}
 
