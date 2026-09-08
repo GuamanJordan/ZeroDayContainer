@@ -23,7 +23,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 09:** Pruebas de integración privilegiadas y job en CI.
 - [x] **Día 10:** Hardening de filesystem (rootfs read-only opcional, desmontajes seguros y rollback).
 - [x] **Día 11:** Teoría y exploración manual de Cgroups v2.
-- [ ] **Próximos días:** Límites de recursos en Go, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 12:** Control de recursos (memoria, CPU, PIDs) con Cgroups v2 desde Go.
+- [ ] **Próximos días:** Capabilities, veth pairs y OverlayFS.
 
 ---
 
@@ -47,6 +48,9 @@ sudo ./mc run /tmp/alpine-rootfs /bin/sh
 
 # Modo seguro con rootfs de solo lectura (--read-only)
 sudo ./mc run --read-only /tmp/alpine-rootfs /bin/sh
+
+# Con límites de recursos (cgroups v2: memoria, CPU, PIDs)
+sudo ./mc run --memory=100m --cpus=0.5 --pids=30 /tmp/alpine-rootfs /bin/sh
 ```
 
 Dentro del contenedor:

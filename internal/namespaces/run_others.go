@@ -5,6 +5,8 @@ package namespaces
 import (
 	"fmt"
 	"syscall"
+
+	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 )
 
 // GetBasicSysProcAttr en sistemas no-Linux retorna una estructura vacía.
@@ -25,6 +27,11 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 // RunPivotRoot en sistemas no-Linux retorna un error de incompatibilidad.
 func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar pivot_root")
+}
+
+// RunPivotRootWithCgroups en sistemas no-Linux retorna un error de incompatibilidad.
+func RunPivotRootWithCgroups(newRoot string, readOnly bool, cgCfg cgroups.Config, cmdPath string, args []string) error {
+	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar cgroups y pivot_root")
 }
 
 // ChildInit en sistemas no-Linux retorna un error indicando que se requiere Linux.
