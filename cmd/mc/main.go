@@ -9,6 +9,7 @@ import (
 
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/namespaces"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/state"
 )
 
@@ -42,6 +43,7 @@ func main() {
 		enableNet := false
 		enableNAT := false
 		enableOverlay := false
+		var volumes []rootfs.VolumeMount
 		var cgCfg cgroups.Config
 		i := 2
 		for i < len(os.Args) {
@@ -59,6 +61,23 @@ func main() {
 			} else if arg == "--overlay" {
 				enableOverlay = true
 				i++
+			} else if strings.HasPrefix(arg, "-v=") || strings.HasPrefix(arg, "--volume=") {
+				spec := strings.TrimPrefix(strings.TrimPrefix(arg, "--volume="), "-v=")
+				vol, err := rootfs.ParseVolumeSpec(spec)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error al parsear volumen: %v\n", err)
+					os.Exit(1)
+				}
+				volumes = append(volumes, vol)
+				i++
+			} else if (arg == "-v" || arg == "--volume") && i+1 < len(os.Args) {
+				vol, err := rootfs.ParseVolumeSpec(os.Args[i+1])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error al parsear volumen: %v\n", err)
+					os.Exit(1)
+				}
+				volumes = append(volumes, vol)
+				i += 2
 			} else if strings.HasPrefix(arg, "--memory=") {
 				cgCfg.MemoryLimit = strings.TrimPrefix(arg, "--memory=")
 				i++
@@ -90,6 +109,7 @@ func main() {
 			EnableNet:     enableNet,
 			EnableNAT:     enableNAT,
 			EnableOverlay: enableOverlay,
+			Volumes:       volumes,
 			Cgroups:       cgCfg,
 		}
 		if err := namespaces.RunPivotRootWithOptions(rootfsPath, opts, cmdPath, cmdArgs); err != nil {
@@ -199,6 +219,7 @@ func printUsage() {
 	fmt.Println("    Opciones:")
 	fmt.Println("      --read-only, -ro           Monta el rootfs en modo solo lectura")
 	fmt.Println("      --overlay                  Monta una capa OverlayFS efímera sobre el rootfs base")
+	fmt.Println("      -v, --volume <h>:<c>[:ro]  Monta un bind mount del host en el contenedor")
 	fmt.Println("      --net                      Aísla la red con network namespace y par de interfaces veth")
 	fmt.Println("      --nat                      Conecta al bridge mc0 y habilita NAT para salida a internet")
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")
