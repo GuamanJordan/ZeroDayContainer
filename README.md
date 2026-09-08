@@ -24,7 +24,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 10:** Hardening de filesystem (rootfs read-only opcional, desmontajes seguros y rollback).
 - [x] **Día 11:** Teoría y exploración manual de Cgroups v2.
 - [x] **Día 12:** Control de recursos (memoria, CPU, PIDs) con Cgroups v2 desde Go.
-- [ ] **Próximos días:** Capabilities, veth pairs y OverlayFS.
+- [x] **Día 13:** Reducción de Linux Capabilities y activación de `no_new_privs`.
+- [ ] **Próximos días:** Network namespaces, veth pairs, bridge NAT y OverlayFS.
 
 ---
 

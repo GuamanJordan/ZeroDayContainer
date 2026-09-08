@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GuamanJordan/ZeroDayContainer/internal/capabilities"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 )
@@ -208,7 +209,10 @@ func ChildInitPivotRoot(newRoot string, readOnly bool, cmdPath string, args []st
 		_ = rootfs.UnmountEssentialFilesystems()
 	}()
 
-	// 4. Ejecutar el comando final solicitado
+	// 4. Reducir capabilities peligrosas y activar NO_NEW_PRIVS para el proceso contenedor
+	_ = capabilities.RestrictPrivileges()
+
+	// 5. Ejecutar el comando final solicitado
 	cmd := exec.Command(cmdPath, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
