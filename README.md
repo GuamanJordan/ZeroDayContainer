@@ -30,7 +30,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 16:** Diseño modular de la CLI y persistencia de estado de contenedores (`mc list`, `mc version`).
 - [x] **Día 17:** Inspección y debug con `setns(2)` y `nsenter` (`mc exec`).
 - [x] **Día 18:** Sistemas de archivos en capas con OverlayFS (`--overlay`).
-- [ ] **Próximos días:** Modelo de amenazas y release v0.1.0.
+- [x] **Día 19:** Modelo de amenazas formal ([STRIDE / Threat Model](docs/THREAT_MODEL.md)) y escaneo con Gosec.
+- [ ] **Próximos días:** Release v0.1.0 y distribución de artefactos.
 
 ---
 
