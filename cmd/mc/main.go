@@ -8,6 +8,7 @@ import (
 
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/namespaces"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/state"
 )
 
 func main() {
@@ -125,6 +126,24 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
+	case "list", "ps":
+		containers, err := state.ListContainers()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error al listar contenedores:", err)
+			os.Exit(1)
+		}
+		if len(containers) == 0 {
+			fmt.Println("No hay contenedores registrados en ejecución.")
+			return
+		}
+		fmt.Printf("%-15s %-8s %-10s %-20s %s\n", "CONTAINER ID", "PID", "STATUS", "COMMAND", "CREATED")
+		for _, c := range containers {
+			createdStr := c.CreatedAt.Format("2006-01-02 15:04:05")
+			fmt.Printf("%-15s %-8d %-10s %-20s %s\n", c.ID, c.PID, c.Status, c.Command, createdStr)
+		}
+	case "version", "-v", "--version":
+		fmt.Println("ZeroDayContainer (mc) v0.1.0-dev")
+		fmt.Println("Runtime de contenedores modular en Go")
 	default:
 		fmt.Println("comando desconocido:", os.Args[1])
 		printUsage()
@@ -143,6 +162,8 @@ func printUsage() {
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")
 	fmt.Println("      --cpus=<cores>             Límite de CPU cores (ej: 0.5, 1.0)")
 	fmt.Println("      --pids=<max>               Límite de procesos concurrentes (ej: 50)")
+	fmt.Println("  list, ps                                          Lista los contenedores registrados")
+	fmt.Println("  version                                           Muestra la versión del runtime")
 	fmt.Println("  run-basic <comando> [args...]                     Lanza un subproceso aislado en UTS, PID y Mount namespaces")
 	fmt.Println("  run-chroot <rootfs_path> <comando> [args...]        Lanza un proceso aislado con chroot")
 }

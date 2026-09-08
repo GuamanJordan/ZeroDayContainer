@@ -27,7 +27,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 13:** Reducción de Linux Capabilities y activación de `no_new_privs`.
 - [x] **Día 14:** Network namespace, veth pair y conectividad host-contenedor.
 - [x] **Día 15:** Conexión de bridge `mc0`, enrutamiento NAT y salida a internet.
-- [ ] **Próximos días:** CLI avanzada, setns, OverlayFS, modelo de amenazas y release v0.1.0.
+- [x] **Día 16:** Diseño modular de la CLI y persistencia de estado de contenedores (`mc list`, `mc version`).
+- [ ] **Próximos días:** Subcomando setns exec, OverlayFS, modelo de amenazas y release v0.1.0.
 
 ---
 
@@ -62,12 +63,17 @@ sudo ./mc run --net /tmp/alpine-rootfs /bin/sh
 sudo ./mc run --nat /tmp/alpine-rootfs /bin/sh
 ```
 
-Dentro del contenedor:
-- `hostname` mostrará `zerodaycontainer`.
-- `ps aux` solo mostrará los procesos aislados del contenedor (con `sh` como **PID 1**).
-- `ls /` mostrará el sistema de archivos raíz del rootfs sin acceso a la raíz del host.
-- `/proc`, `/sys`, `/dev` y `/dev/pts` estarán correctamente montados y disponibles.
-- Si se usa `--read-only`, el filesystem raíz rechazará cualquier escritura con `Read-only file system`.
+### Listar contenedores registrados (`mc list` o `mc ps`)
+
+```bash
+./mc list
+```
+
+### Consultar versión del runtime
+
+```bash
+./mc version
+```
 
 ### Ejecutar subproceso básico aislado (UTS, PID, Mount)
 
