@@ -29,7 +29,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 15:** Conexión de bridge `mc0`, enrutamiento NAT y salida a internet.
 - [x] **Día 16:** Diseño modular de la CLI y persistencia de estado de contenedores (`mc list`, `mc version`).
 - [x] **Día 17:** Inspección y debug con `setns(2)` y `nsenter` (`mc exec`).
-- [ ] **Próximos días:** OverlayFS, modelo de amenazas y release v0.1.0.
+- [x] **Día 18:** Sistemas de archivos en capas con OverlayFS (`--overlay`).
+- [ ] **Próximos días:** Modelo de amenazas y release v0.1.0.
 
 ---
 
@@ -50,6 +51,9 @@ go build -o mc ./cmd/mc
 ```bash
 # Modo estándar (lectura y escritura)
 sudo ./mc run /tmp/alpine-rootfs /bin/sh
+
+# Con capa de unión OverlayFS efímera (--overlay)
+sudo ./mc run --overlay /tmp/alpine-rootfs /bin/sh
 
 # Modo seguro con rootfs de solo lectura (--read-only)
 sudo ./mc run --read-only /tmp/alpine-rootfs /bin/sh
