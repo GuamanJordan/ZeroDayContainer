@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
@@ -79,4 +80,49 @@ jobs:
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec -exclude=G204,G304 ./...
+
+  release:
+    name: Multi-Arch Build & GitHub Release
+    needs: [unit-tests, lint, integration-tests, security-scan]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build Multi-Arch Binaries & Generate Checksums
+        run: |
+          mkdir -p dist
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/mc ./cmd/mc
+          tar -czf dist/mc-${TAG_NAME}-linux-amd64.tar.gz -C dist mc
+          rm dist/mc
+
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/mc ./cmd/mc
+          tar -czf dist/mc-${TAG_NAME}-linux-arm64.tar.gz -C dist mc
+          rm dist/mc
+
+          # Checksums SHA256
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+          cd ..
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/checksums.txt
+          generate_release_notes: true
+
 

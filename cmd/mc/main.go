@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -181,8 +182,9 @@ func main() {
 			os.Exit(1)
 		}
 	case "version", "-v", "--version":
-		fmt.Println("ZeroDayContainer (mc) v0.1.0-dev")
-		fmt.Println("Runtime de contenedores modular en Go")
+		fmt.Println("ZeroDayContainer (mc) v0.1.0")
+		fmt.Printf("Go runtime: %s (%s/%s)\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		fmt.Println("Runtime modular de contenedores en Linux sin Docker ni runc")
 	default:
 		fmt.Println("comando desconocido:", os.Args[1])
 		printUsage()
