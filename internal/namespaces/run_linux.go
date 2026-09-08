@@ -13,6 +13,7 @@ import (
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/network"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/state"
 )
 
 // GetBasicSysProcAttr retorna la configuración SysProcAttr con las flags
@@ -132,6 +133,20 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("error al iniciar proceso contenedor: %w", err)
 	}
+
+	// Registrar estado del contenedor en /tmp/mc/containers
+	contID := fmt.Sprintf("mc-%d", time.Now().UnixNano()%1000000)
+	_ = state.SaveContainer(state.ContainerInfo{
+		ID:        contID,
+		PID:       cmd.Process.Pid,
+		Command:   cmdPath,
+		Rootfs:    newRoot,
+		CreatedAt: time.Now(),
+		Status:    "running",
+	})
+	defer func() {
+		_ = state.RemoveContainer(contID)
+	}()
 
 	// Configurar cgroup si aplica
 	if hasCgroups && cg != nil {
