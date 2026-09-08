@@ -28,7 +28,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 14:** Network namespace, veth pair y conectividad host-contenedor.
 - [x] **Día 15:** Conexión de bridge `mc0`, enrutamiento NAT y salida a internet.
 - [x] **Día 16:** Diseño modular de la CLI y persistencia de estado de contenedores (`mc list`, `mc version`).
-- [ ] **Próximos días:** Subcomando setns exec, OverlayFS, modelo de amenazas y release v0.1.0.
+- [x] **Día 17:** Inspección y debug con `setns(2)` y `nsenter` (`mc exec`).
+- [ ] **Próximos días:** OverlayFS, modelo de amenazas y release v0.1.0.
 
 ---
 
@@ -61,6 +62,16 @@ sudo ./mc run --net /tmp/alpine-rootfs /bin/sh
 
 # Con conexión a internet vía bridge mc0 y NAT (--nat)
 sudo ./mc run --nat /tmp/alpine-rootfs /bin/sh
+```
+
+### Ejecutar comandos dentro de un contenedor activo (`mc exec`)
+
+```bash
+# Ejecutar un shell interactivo por Container ID
+sudo ./mc exec mc-123456 /bin/sh
+
+# Ejecutar un comando por PID directo
+sudo ./mc exec 14209 /bin/ps aux
 ```
 
 ### Listar contenedores registrados (`mc list` o `mc ps`)
