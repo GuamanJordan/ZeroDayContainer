@@ -141,6 +141,40 @@ func main() {
 			createdStr := c.CreatedAt.Format("2006-01-02 15:04:05")
 			fmt.Printf("%-15s %-8d %-10s %-20s %s\n", c.ID, c.PID, c.Status, c.Command, createdStr)
 		}
+	case "exec":
+		if len(os.Args) < 4 {
+			fmt.Println("uso: mc exec <pid_or_id> <comando> [args...]")
+			os.Exit(1)
+		}
+		target := os.Args[2]
+		cmdPath := os.Args[3]
+		cmdArgs := os.Args[4:]
+
+		targetPID, err := strconv.Atoi(target)
+		if err != nil {
+			containers, listErr := state.ListContainers()
+			if listErr != nil {
+				fmt.Fprintf(os.Stderr, "error al buscar contenedor: %v\n", listErr)
+				os.Exit(1)
+			}
+			found := false
+			for _, c := range containers {
+				if c.ID == target {
+					targetPID = c.PID
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.Fprintf(os.Stderr, "no se encontró ningún contenedor activo con ID o PID %q\n", target)
+				os.Exit(1)
+			}
+		}
+
+		if err := namespaces.ExecInContainer(targetPID, cmdPath, cmdArgs); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
 	case "version", "-v", "--version":
 		fmt.Println("ZeroDayContainer (mc) v0.1.0-dev")
 		fmt.Println("Runtime de contenedores modular en Go")
@@ -162,8 +196,10 @@ func printUsage() {
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")
 	fmt.Println("      --cpus=<cores>             Límite de CPU cores (ej: 0.5, 1.0)")
 	fmt.Println("      --pids=<max>               Límite de procesos concurrentes (ej: 50)")
+	fmt.Println("  exec <pid_or_id> <comando> [args...]              Ejecuta un comando en los namespaces de un contenedor activo")
 	fmt.Println("  list, ps                                          Lista los contenedores registrados")
 	fmt.Println("  version                                           Muestra la versión del runtime")
 	fmt.Println("  run-basic <comando> [args...]                     Lanza un subproceso aislado en UTS, PID y Mount namespaces")
 	fmt.Println("  run-chroot <rootfs_path> <comando> [args...]        Lanza un proceso aislado con chroot")
 }
+
