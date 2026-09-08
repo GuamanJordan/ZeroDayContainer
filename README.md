@@ -22,7 +22,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 08:** Montajes de pseudo-sistemas de archivos esenciales (`/proc`, `/sys`, `/dev`, `/dev/pts`).
 - [x] **Día 09:** Pruebas de integración privilegiadas y job en CI.
 - [x] **Día 10:** Hardening de filesystem (rootfs read-only opcional, desmontajes seguros y rollback).
-- [ ] **Próximos días:** Cgroups v2, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 11:** Teoría y exploración manual de Cgroups v2.
+- [ ] **Próximos días:** Límites de recursos en Go, Capabilities, veth pairs y OverlayFS.
 
 ---
 
