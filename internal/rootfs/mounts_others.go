@@ -24,3 +24,11 @@ func GetEssentialMounts() []MountSpec {
 func MountEssentialFilesystems() error {
 	return fmt.Errorf("MountEssentialFilesystems requiere Linux para ejecutarse")
 }
+
+// RollbackMounts en sistemas no-Linux es un no-op.
+func RollbackMounts(targets []string) {}
+
+// UnmountEssentialFilesystems en sistemas no-Linux retorna un error de incompatibilidad.
+func UnmountEssentialFilesystems() error {
+	return fmt.Errorf("UnmountEssentialFilesystems requiere Linux para ejecutarse")
+}

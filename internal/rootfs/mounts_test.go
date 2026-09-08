@@ -33,3 +33,10 @@ func TestGetEssentialMounts(t *testing.T) {
 		}
 	}
 }
+
+func TestRollbackMountsNoPanic(t *testing.T) {
+	// Verificar que RollbackMounts maneje de forma segura slices nulos o vacíos sin causar panic
+	RollbackMounts(nil)
+	RollbackMounts([]string{})
+	RollbackMounts([]string{"/nonexistent/test/path"})
+}

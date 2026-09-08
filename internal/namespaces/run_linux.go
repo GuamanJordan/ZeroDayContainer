@@ -56,7 +56,8 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 }
 
 // RunPivotRoot lanza `cmdPath args...` aislando el sistema de archivos raíz mediante pivot_root.
-func RunPivotRoot(newRoot string, cmdPath string, args []string) error {
+// Permite especificar si el filesystem del contenedor debe montarse en modo solo lectura (readOnly).
+func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	if newRoot == "" {
 		return fmt.Errorf("se debe especificar la ruta del rootfs")
 	}
@@ -64,7 +65,14 @@ func RunPivotRoot(newRoot string, cmdPath string, args []string) error {
 		return fmt.Errorf("se debe especificar un comando para ejecutar")
 	}
 
-	cmd := exec.Command("/proc/self/exe", append([]string{"child-init-pivot", newRoot, cmdPath}, args...)...)
+	initArgs := []string{"child-init-pivot"}
+	if readOnly {
+		initArgs = append(initArgs, "--read-only")
+	}
+	initArgs = append(initArgs, newRoot, cmdPath)
+	initArgs = append(initArgs, args...)
+
+	cmd := exec.Command("/proc/self/exe", initArgs...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -138,7 +146,8 @@ func ChildInitChroot(newRoot string, cmdPath string, args []string) error {
 }
 
 // ChildInitPivotRoot se ejecuta dentro del nuevo namespace, aplica pivot_root y monta /proc, /sys, /dev y /dev/pts.
-func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
+// Aplica hardening como rootfs de solo lectura si readOnly es verdadero y asegura desmontajes limpios al salir.
+func ChildInitPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	if newRoot == "" {
 		return fmt.Errorf("se debe especificar la ruta del rootfs")
 	}
@@ -151,8 +160,8 @@ func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
 		return fmt.Errorf("sethostname: %w", err)
 	}
 
-	// 2. Aplicar pivot_root a newRoot (desvincula la raíz vieja del host)
-	if err := rootfs.ApplyPivotRoot(newRoot); err != nil {
+	// 2. Aplicar pivot_root a newRoot con opciones de hardening
+	if err := rootfs.ApplyPivotRootWithOptions(newRoot, rootfs.PivotOptions{ReadOnly: readOnly}); err != nil {
 		return fmt.Errorf("aplicar pivot_root: %w", err)
 	}
 
@@ -160,6 +169,9 @@ func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
 	if err := rootfs.MountEssentialFilesystems(); err != nil {
 		return fmt.Errorf("montar sistemas de archivos esenciales: %w", err)
 	}
+	defer func() {
+		_ = rootfs.UnmountEssentialFilesystems()
+	}()
 
 	// 4. Ejecutar el comando final solicitado
 	cmd := exec.Command(cmdPath, args...)

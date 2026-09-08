@@ -14,4 +14,21 @@ func TestApplyPivotRootValidation(t *testing.T) {
 	if err == nil {
 		t.Error("se esperaba un error al pasar una ruta inexistente")
 	}
+
+	err = ApplyPivotRootWithOptions("", PivotOptions{ReadOnly: true})
+	if err == nil {
+		t.Error("se esperaba un error al pasar newRoot vacío en ApplyPivotRootWithOptions")
+	}
+
+	err = ApplyPivotRootWithOptions("/ruta/inexistente/zerodaycontainer", PivotOptions{ReadOnly: true})
+	if err == nil {
+		t.Error("se esperaba un error al pasar una ruta inexistente en ApplyPivotRootWithOptions")
+	}
+}
+
+func TestRemountReadOnlyValidation(t *testing.T) {
+	err := RemountReadOnly("")
+	if err == nil {
+		t.Error("se esperaba un error al pasar un target vacío a RemountReadOnly")
+	}
 }

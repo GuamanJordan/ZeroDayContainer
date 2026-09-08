@@ -21,7 +21,8 @@ Este proyecto sigue una hoja de ruta estructurada de 30 días ([Plan Completo de
 - [x] **Día 07:** Reemplazo de la raíz en contenedores con `pivot_root`.
 - [x] **Día 08:** Montajes de pseudo-sistemas de archivos esenciales (`/proc`, `/sys`, `/dev`, `/dev/pts`).
 - [x] **Día 09:** Pruebas de integración privilegiadas y job en CI.
-- [ ] **Próximos días:** Desmontajes seguros/hardening, Cgroups v2, Capabilities, veth pairs y OverlayFS.
+- [x] **Día 10:** Hardening de filesystem (rootfs read-only opcional, desmontajes seguros y rollback).
+- [ ] **Próximos días:** Cgroups v2, Capabilities, veth pairs y OverlayFS.
 
 ---
 
@@ -40,7 +41,11 @@ go build -o mc ./cmd/mc
 ### Ejecutar un contenedor completo con `pivot_root` (`mc run`)
 
 ```bash
+# Modo estándar (lectura y escritura)
 sudo ./mc run /tmp/alpine-rootfs /bin/sh
+
+# Modo seguro con rootfs de solo lectura (--read-only)
+sudo ./mc run --read-only /tmp/alpine-rootfs /bin/sh
 ```
 
 Dentro del contenedor:
@@ -48,6 +53,7 @@ Dentro del contenedor:
 - `ps aux` solo mostrará los procesos aislados del contenedor (con `sh` como **PID 1**).
 - `ls /` mostrará el sistema de archivos raíz del rootfs sin acceso a la raíz del host.
 - `/proc`, `/sys`, `/dev` y `/dev/pts` estarán correctamente montados y disponibles.
+- Si se usa `--read-only`, el filesystem raíz rechazará cualquier escritura con `Read-only file system`.
 
 ### Ejecutar subproceso básico aislado (UTS, PID, Mount)
 

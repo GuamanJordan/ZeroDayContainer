@@ -30,7 +30,16 @@ func GetEssentialMounts() []MountSpec {
 
 // MountEssentialFilesystems crea los directorios destino y monta los sistemas de archivos virtuales
 // indispensables dentro del contenedor (/proc, /sys, /dev y /dev/pts).
-func MountEssentialFilesystems() error {
+// Si ocurre un error durante el proceso de montaje, realiza un rollback desmontando en orden
+// inverso todos los puntos montados previamente para evitar filtraciones de recursos.
+func MountEssentialFilesystems() (err error) {
+	var mounted []string
+	defer func() {
+		if err != nil {
+			RollbackMounts(mounted)
+		}
+	}()
+
 	for _, m := range GetEssentialMounts() {
 		if err := os.MkdirAll(m.Target, 0755); err != nil {
 			return fmt.Errorf("mkdir '%s': %w", m.Target, err)
@@ -38,12 +47,37 @@ func MountEssentialFilesystems() error {
 		if err := syscall.Mount(m.Source, m.Target, m.FSType, m.Flags, m.Data); err != nil {
 			return fmt.Errorf("mount %s en %s (%s): %w", m.Source, m.Target, m.FSType, err)
 		}
+		mounted = append(mounted, m.Target)
 	}
 
 	if err := createEssentialDevNodes(); err != nil {
 		return fmt.Errorf("crear nodos en /dev: %w", err)
 	}
 
+	return nil
+}
+
+// RollbackMounts desmonta en orden inverso los puntos de montaje indicados usando MNT_DETACH.
+func RollbackMounts(targets []string) {
+	for i := len(targets) - 1; i >= 0; i-- {
+		target := targets[i]
+		_ = syscall.Unmount(target, syscall.MNT_DETACH)
+	}
+}
+
+// UnmountEssentialFilesystems desmonta de forma segura y en orden inverso los sistemas de archivos esenciales.
+func UnmountEssentialFilesystems() error {
+	mounts := GetEssentialMounts()
+	var errs []error
+	for i := len(mounts) - 1; i >= 0; i-- {
+		target := mounts[i].Target
+		if err := syscall.Unmount(target, syscall.MNT_DETACH); err != nil {
+			errs = append(errs, fmt.Errorf("desmontar '%s': %w", target, err))
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("errores al desmontar sistemas de archivos esenciales: %v", errs)
+	}
 	return nil
 }
 
