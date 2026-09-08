@@ -9,6 +9,7 @@ import (
 
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/namespaces"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/network"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/state"
 )
@@ -44,6 +45,7 @@ func main() {
 		enableNAT := false
 		enableOverlay := false
 		var volumes []rootfs.VolumeMount
+		var portMappings []network.PortMapping
 		var cgCfg cgroups.Config
 		i := 2
 		for i < len(os.Args) {
@@ -78,6 +80,23 @@ func main() {
 				}
 				volumes = append(volumes, vol)
 				i += 2
+			} else if strings.HasPrefix(arg, "-p=") || strings.HasPrefix(arg, "--port=") {
+				spec := strings.TrimPrefix(strings.TrimPrefix(arg, "--port="), "-p=")
+				pm, err := network.ParsePortMapping(spec)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error al parsear puerto: %v\n", err)
+					os.Exit(1)
+				}
+				portMappings = append(portMappings, pm)
+				i++
+			} else if (arg == "-p" || arg == "--port") && i+1 < len(os.Args) {
+				pm, err := network.ParsePortMapping(os.Args[i+1])
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error al parsear puerto: %v\n", err)
+					os.Exit(1)
+				}
+				portMappings = append(portMappings, pm)
+				i += 2
 			} else if strings.HasPrefix(arg, "--memory=") {
 				cgCfg.MemoryLimit = strings.TrimPrefix(arg, "--memory=")
 				i++
@@ -110,6 +129,7 @@ func main() {
 			EnableNAT:     enableNAT,
 			EnableOverlay: enableOverlay,
 			Volumes:       volumes,
+			PortMappings:  portMappings,
 			Cgroups:       cgCfg,
 		}
 		if err := namespaces.RunPivotRootWithOptions(rootfsPath, opts, cmdPath, cmdArgs); err != nil {
@@ -220,6 +240,7 @@ func printUsage() {
 	fmt.Println("      --read-only, -ro           Monta el rootfs en modo solo lectura")
 	fmt.Println("      --overlay                  Monta una capa OverlayFS efímera sobre el rootfs base")
 	fmt.Println("      -v, --volume <h>:<c>[:ro]  Monta un bind mount del host en el contenedor")
+	fmt.Println("      -p, --port <h>:<c>[/proto] Reenvía un puerto del host al contenedor (DNAT)")
 	fmt.Println("      --net                      Aísla la red con network namespace y par de interfaces veth")
 	fmt.Println("      --nat                      Conecta al bridge mc0 y habilita NAT para salida a internet")
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")

@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/network"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 )
 
@@ -32,6 +33,7 @@ type ContainerOpts struct {
 	EnableNAT     bool
 	EnableOverlay bool
 	Volumes       []rootfs.VolumeMount
+	PortMappings  []network.PortMapping
 	Cgroups       cgroups.Config
 }
 

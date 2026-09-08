@@ -75,6 +75,7 @@ type ContainerOpts struct {
 	EnableNAT     bool
 	EnableOverlay bool
 	Volumes       []rootfs.VolumeMount
+	PortMappings  []network.PortMapping
 	Cgroups       cgroups.Config
 }
 
@@ -147,7 +148,8 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if opts.EnableNet || opts.EnableNAT {
+	enableNet := opts.EnableNet || opts.EnableNAT || len(opts.PortMappings) > 0
+	if enableNet {
 		cmd.SysProcAttr = GetNetworkSysProcAttr()
 	} else {
 		cmd.SysProcAttr = GetBasicSysProcAttr()
@@ -197,18 +199,28 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 	}
 
 	// Configurar red veth y bridge/NAT si se activó
-	if opts.EnableNet || opts.EnableNAT {
+	if enableNet {
 		netCfg := network.DefaultNetworkConfig(fmt.Sprintf("%d", cmd.Process.Pid))
 		_ = network.SetupVethPair(cmd.Process.Pid, netCfg)
 		defer func() {
 			_ = network.CleanupVethPair(netCfg.HostVethName)
 		}()
 
-		if opts.EnableNAT {
+		if opts.EnableNAT || len(opts.PortMappings) > 0 {
 			_ = network.SetupBridge(network.DefaultBridgeName, network.DefaultBridgeIP)
 			_ = network.AttachToBridge(netCfg.HostVethName, network.DefaultBridgeName)
 			_ = network.EnableNAT(network.DefaultSubnet, network.DefaultBridgeName)
 			_ = network.SetupDefaultGateway(cmd.Process.Pid, network.DefaultGatewayIP)
+
+			// Configurar reenvío de puertos
+			for _, pm := range opts.PortMappings {
+				pmCopy := pm
+				if err := network.SetupPortForwarding(pmCopy, netCfg.GuestIP); err == nil {
+					defer func() {
+						_ = network.CleanupPortForwarding(pmCopy, netCfg.GuestIP)
+					}()
+				}
+			}
 		}
 	}
 
