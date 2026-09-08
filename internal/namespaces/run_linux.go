@@ -131,8 +131,8 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 	// Asegurar configuración DNS en el rootfs si no existe o está vacío
 	resolvPath := filepath.Join(targetRoot, "etc", "resolv.conf")
 	if data, err := os.ReadFile(resolvPath); err != nil || len(data) == 0 {
-		_ = os.MkdirAll(filepath.Join(targetRoot, "etc"), 0755)
-		_ = os.WriteFile(resolvPath, []byte("nameserver 8.8.8.8\nnameserver 1.1.1.1\n"), 0644)
+		_ = os.MkdirAll(filepath.Join(targetRoot, "etc"), 0750)
+		_ = os.WriteFile(resolvPath, []byte("nameserver 8.8.8.8\nnameserver 1.1.1.1\n"), 0600)
 	}
 
 	initArgs := []string{"child-init-pivot"}
