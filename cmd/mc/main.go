@@ -33,11 +33,20 @@ func main() {
 			os.Exit(1)
 		}
 	case "run", "run-pivot":
-		if len(os.Args) < 4 {
+		readOnly := false
+		argsStart := 2
+		if len(os.Args) > 2 && (os.Args[2] == "--read-only" || os.Args[2] == "-ro") {
+			readOnly = true
+			argsStart = 3
+		}
+		if len(os.Args) < argsStart+2 {
 			printUsage()
 			os.Exit(1)
 		}
-		if err := namespaces.RunPivotRoot(os.Args[2], os.Args[3], os.Args[4:]); err != nil {
+		rootfsPath := os.Args[argsStart]
+		cmdPath := os.Args[argsStart+1]
+		cmdArgs := os.Args[argsStart+2:]
+		if err := namespaces.RunPivotRoot(rootfsPath, readOnly, cmdPath, cmdArgs); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
@@ -60,11 +69,20 @@ func main() {
 			os.Exit(1)
 		}
 	case "child-init-pivot":
-		if len(os.Args) < 4 {
+		readOnly := false
+		argsStart := 2
+		if len(os.Args) > 2 && (os.Args[2] == "--read-only" || os.Args[2] == "-ro") {
+			readOnly = true
+			argsStart = 3
+		}
+		if len(os.Args) < argsStart+2 {
 			printUsage()
 			os.Exit(1)
 		}
-		if err := namespaces.ChildInitPivotRoot(os.Args[2], os.Args[3], os.Args[4:]); err != nil {
+		rootfsPath := os.Args[argsStart]
+		cmdPath := os.Args[argsStart+1]
+		cmdArgs := os.Args[argsStart+2:]
+		if err := namespaces.ChildInitPivotRoot(rootfsPath, readOnly, cmdPath, cmdArgs); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			os.Exit(1)
 		}
@@ -78,7 +96,7 @@ func main() {
 func printUsage() {
 	fmt.Println("uso: mc <comando> [argumentos]")
 	fmt.Println("comandos disponibles:")
-	fmt.Println("  run <rootfs_path> <comando> [args...]       Lanza un contenedor completo aislado con pivot_root")
-	fmt.Println("  run-basic <comando> [args...]             Lanza un subproceso aislado en UTS, PID y Mount namespaces")
-	fmt.Println("  run-chroot <rootfs_path> <comando> [args...] Lanza un proceso aislado con chroot")
+	fmt.Println("  run [--read-only] <rootfs_path> <comando> [args...] Lanza un contenedor completo aislado con pivot_root")
+	fmt.Println("  run-basic <comando> [args...]                     Lanza un subproceso aislado en UTS, PID y Mount namespaces")
+	fmt.Println("  run-chroot <rootfs_path> <comando> [args...]        Lanza un proceso aislado con chroot")
 }

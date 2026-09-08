@@ -23,7 +23,7 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 }
 
 // RunPivotRoot en sistemas no-Linux retorna un error de incompatibilidad.
-func RunPivotRoot(newRoot string, cmdPath string, args []string) error {
+func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar pivot_root")
 }
 
@@ -38,6 +38,6 @@ func ChildInitChroot(newRoot string, cmdPath string, args []string) error {
 }
 
 // ChildInitPivotRoot en sistemas no-Linux retorna un error indicando que se requiere Linux.
-func ChildInitPivotRoot(newRoot string, cmdPath string, args []string) error {
+func ChildInitPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
 	return fmt.Errorf("ZeroDayContainer requiere Linux para ejecutar child-init-pivot")
 }
