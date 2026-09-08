@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
+	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 )
 
 // GetBasicSysProcAttr en sistemas no-Linux retorna una estructura vacía.
@@ -30,6 +31,7 @@ type ContainerOpts struct {
 	EnableNet     bool
 	EnableNAT     bool
 	EnableOverlay bool
+	Volumes       []rootfs.VolumeMount
 	Cgroups       cgroups.Config
 }
 

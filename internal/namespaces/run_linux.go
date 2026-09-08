@@ -74,6 +74,7 @@ type ContainerOpts struct {
 	EnableNet     bool
 	EnableNAT     bool
 	EnableOverlay bool
+	Volumes       []rootfs.VolumeMount
 	Cgroups       cgroups.Config
 }
 
@@ -116,11 +117,22 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 		targetRoot = cfg.MergedDir
 	}
 
+	// Montar volúmenes bind mount en targetRoot
+	if len(opts.Volumes) > 0 {
+		mountedVols, err := rootfs.MountVolumes(targetRoot, opts.Volumes)
+		if err != nil {
+			return fmt.Errorf("error al montar volúmenes: %w", err)
+		}
+		defer func() {
+			rootfs.UnmountVolumes(mountedVols)
+		}()
+	}
+
 	// Asegurar configuración DNS en el rootfs si no existe o está vacío
 	resolvPath := filepath.Join(targetRoot, "etc", "resolv.conf")
 	if data, err := os.ReadFile(resolvPath); err != nil || len(data) == 0 {
-		_ = os.MkdirAll(filepath.Join(targetRoot, "etc"), 0755)
-		_ = os.WriteFile(resolvPath, []byte("nameserver 8.8.8.8\nnameserver 1.1.1.1\n"), 0644)
+		_ = os.MkdirAll(filepath.Join(targetRoot, "etc"), 0750)
+		_ = os.WriteFile(resolvPath, []byte("nameserver 8.8.8.8\nnameserver 1.1.1.1\n"), 0600)
 	}
 
 	initArgs := []string{"child-init-pivot"}

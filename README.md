@@ -34,6 +34,7 @@ El proyecto ha completado de forma rigurosa la totalidad de los 20 hitos planifi
 - [x] **Día 18:** Sistemas de archivos en capas con OverlayFS (`lowerdir`, `upperdir`, `workdir`, `merged`) y bandera `--overlay`.
 - [x] **Día 19:** Modelo formal de amenazas ([STRIDE Threat Model](docs/THREAT_MODEL.md)) y auditoría estática con Gosec.
 - [x] **Día 20:** Release v0.1.0, compilación cruzada multiarquitectura (`linux/amd64`, `linux/arm64`) y verificación criptográfica (SHA-256).
+- [x] **Día 21:** Montaje de volúmenes y Bind Mounts persistentes/compartidos (`-v, --volume`).
 
 ---
 
@@ -58,20 +59,23 @@ sudo ./mc run /tmp/alpine-rootfs /bin/sh
 # 2. Con capa de unión efímera OverlayFS (no altera la imagen base)
 sudo ./mc run --overlay /tmp/alpine-rootfs /bin/sh
 
-# 3. Modo de máxima seguridad con rootfs de solo lectura
+# 3. Con volúmenes bind mount del host (-v host:container[:ro])
+sudo ./mc run -v /home/user/app:/app /tmp/alpine-rootfs /bin/sh
+
+# 4. Modo de máxima seguridad con rootfs de solo lectura
 sudo ./mc run --read-only /tmp/alpine-rootfs /bin/sh
 
-# 4. Con límites de recursos garantizados por Cgroups v2
+# 5. Con límites de recursos garantizados por Cgroups v2
 sudo ./mc run --memory=128m --cpus=1.0 --pids=50 /tmp/alpine-rootfs /bin/sh
 
-# 5. Con pila de red aislada y veth pair
+# 6. Con pila de red aislada y veth pair
 sudo ./mc run --net /tmp/alpine-rootfs /bin/sh
 
-# 6. Con salida completa a Internet vía bridge mc0 y NAT
+# 7. Con salida completa a Internet vía bridge mc0 y NAT
 sudo ./mc run --nat /tmp/alpine-rootfs /bin/sh
 
-# 7. Combinación completa para entorno de producción
-sudo ./mc run --overlay --nat --memory=256m --cpus=1.0 --pids=100 /tmp/alpine-rootfs /bin/sh
+# 8. Combinación completa para entorno de producción
+sudo ./mc run --overlay --nat -v /home/user/app:/app --memory=256m --cpus=1.0 --pids=100 /tmp/alpine-rootfs /bin/sh
 ```
 
 ### Ejecutar Comandos en Contenedores Activos (`mc exec`)
