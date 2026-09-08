@@ -56,11 +56,15 @@ func SetupBridge(bridgeName, bridgeIP string) error {
 	return nil
 }
 
-// AttachToBridge conecta el extremo host de una veth al bridge indicado.
+// AttachToBridge conecta el extremo host de una veth al bridge indicado, limpiando cualquier IP previa.
 func AttachToBridge(hostVeth, bridgeName string) error {
 	if hostVeth == "" || bridgeName == "" {
 		return fmt.Errorf("nombres de veth y bridge requeridos")
 	}
+
+	// La interfaz esclava de un bridge no debe poseer IP directa para evitar conflictos de enrutamiento
+	_ = exec.Command("ip", "addr", "flush", "dev", hostVeth).Run()
+
 	cmd := exec.Command("ip", "link", "set", hostVeth, "master", bridgeName)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("conectar '%s' al bridge '%s': %s (%w)", hostVeth, bridgeName, string(out), err)
@@ -68,7 +72,8 @@ func AttachToBridge(hostVeth, bridgeName string) error {
 	return nil
 }
 
-// EnableNAT activa el reenvío de paquetes IPv4 en el kernel y agrega la regla iptables MASQUERADE.
+// EnableNAT activa el reenvío de paquetes IPv4 en el kernel, la regla iptables MASQUERADE
+// y las reglas en la cadena FORWARD (necesarias cuando Docker o firewalls imponen DROP por defecto).
 func EnableNAT(subnet, bridgeName string) error {
 	if subnet == "" {
 		subnet = DefaultSubnet
@@ -84,14 +89,25 @@ func EnableNAT(subnet, bridgeName string) error {
 
 	// 2. Comprobar si la regla MASQUERADE ya existe
 	checkCmd := exec.Command("iptables", "-t", "nat", "-C", "POSTROUTING", "-s", subnet, "!", "-o", bridgeName, "-j", "MASQUERADE")
-	if checkCmd.Run() == nil {
-		return nil
+	if checkCmd.Run() != nil {
+		cmd := exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", subnet, "!", "-o", bridgeName, "-j", "MASQUERADE")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("iptables MASQUERADE: %s (%w)", string(out), err)
+		}
 	}
 
-	// 3. Añadir regla MASQUERADE
-	cmd := exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", subnet, "!", "-o", bridgeName, "-j", "MASQUERADE")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("iptables MASQUERADE: %s (%w)", string(out), err)
+	// 3. Reglas en cadena FORWARD para permitir tráfico entrante/saliente del bridge
+	forwardRules := [][]string{
+		{"-i", bridgeName, "!", "-o", bridgeName, "-j", "ACCEPT"},
+		{"-o", bridgeName, "-m", "conntrack", "--ctstate", "RELATED,ESTABLISHED", "-j", "ACCEPT"},
+		{"-i", bridgeName, "-o", bridgeName, "-j", "ACCEPT"},
+	}
+	for _, rule := range forwardRules {
+		check := exec.Command("iptables", append([]string{"-C", "FORWARD"}, rule...)...)
+		if check.Run() != nil {
+			add := exec.Command("iptables", append([]string{"-I", "FORWARD", "1"}, rule...)...)
+			_ = add.Run()
+		}
 	}
 
 	return nil
