@@ -26,7 +26,7 @@ func SetupOverlayDirectories(cfg OverlayConfig) error {
 	}
 
 	for _, dir := range []string{cfg.UpperDir, cfg.WorkDir, cfg.MergedDir} {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			return fmt.Errorf("error al crear directorio overlay %s: %w", dir, err)
 		}
 	}

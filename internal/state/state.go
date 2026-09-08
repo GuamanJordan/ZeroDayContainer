@@ -28,7 +28,7 @@ func SetStateDir(dir string) {
 
 // SaveContainer registra o actualiza el estado de un contenedor en disco.
 func SaveContainer(info ContainerInfo) error {
-	if err := os.MkdirAll(defaultStateDir, 0755); err != nil {
+	if err := os.MkdirAll(defaultStateDir, 0750); err != nil {
 		return fmt.Errorf("crear directorio de estado '%s': %w", defaultStateDir, err)
 	}
 
@@ -38,7 +38,7 @@ func SaveContainer(info ContainerInfo) error {
 	}
 
 	filePath := filepath.Join(defaultStateDir, fmt.Sprintf("%s.json", info.ID))
-	return os.WriteFile(filePath, data, 0644)
+	return os.WriteFile(filePath, data, 0600)
 }
 
 // RemoveContainer elimina el archivo de estado de un contenedor.

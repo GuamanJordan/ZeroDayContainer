@@ -41,7 +41,7 @@ func MountEssentialFilesystems() (err error) {
 	}()
 
 	for _, m := range GetEssentialMounts() {
-		if err := os.MkdirAll(m.Target, 0755); err != nil {
+		if err := os.MkdirAll(m.Target, 0750); err != nil {
 			return fmt.Errorf("mkdir '%s': %w", m.Target, err)
 		}
 		if err := syscall.Mount(m.Source, m.Target, m.FSType, m.Flags, m.Data); err != nil {
@@ -89,7 +89,7 @@ func createEssentialDevNodes() error {
 		targetDev := filepath.Join("/dev", dev)
 		f, err := os.Create(targetDev)
 		if err == nil {
-			f.Close()
+			_ = f.Close()
 			_ = syscall.Mount(filepath.Join("/proc/kcore"), targetDev, "", syscall.MS_BIND, "")
 		}
 	}
