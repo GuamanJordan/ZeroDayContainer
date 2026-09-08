@@ -7,7 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 
+	"github.com/GuamanJordan/ZeroDayContainer/internal/cgroups"
 	"github.com/GuamanJordan/ZeroDayContainer/internal/rootfs"
 )
 
@@ -58,6 +60,11 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 // RunPivotRoot lanza `cmdPath args...` aislando el sistema de archivos raíz mediante pivot_root.
 // Permite especificar si el filesystem del contenedor debe montarse en modo solo lectura (readOnly).
 func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) error {
+	return RunPivotRootWithCgroups(newRoot, readOnly, cgroups.Config{}, cmdPath, args)
+}
+
+// RunPivotRootWithCgroups lanza el contenedor aplicando pivot_root, modo solo lectura opcional y límites de cgroups v2.
+func RunPivotRootWithCgroups(newRoot string, readOnly bool, cgCfg cgroups.Config, cmdPath string, args []string) error {
 	if newRoot == "" {
 		return fmt.Errorf("se debe especificar la ruta del rootfs")
 	}
@@ -79,7 +86,35 @@ func RunPivotRoot(newRoot string, readOnly bool, cmdPath string, args []string) 
 
 	cmd.SysProcAttr = GetBasicSysProcAttr()
 
-	return cmd.Run()
+	hasCgroups := cgCfg.MemoryLimit != "" || cgCfg.CPUs > 0 || cgCfg.PIDsLimit > 0
+	var cg *cgroups.Cgroup
+	if hasCgroups {
+		var err error
+		cg, err = cgroups.New(fmt.Sprintf("zeroday-%d", time.Now().UnixNano()))
+		if err != nil {
+			return fmt.Errorf("error al crear cgroup: %w", err)
+		}
+		defer func() {
+			_ = cg.Cleanup()
+		}()
+
+		if err := cg.ApplyLimits(cgCfg); err != nil {
+			return fmt.Errorf("error al aplicar límites de cgroup: %w", err)
+		}
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error al iniciar proceso contenedor: %w", err)
+	}
+
+	if hasCgroups && cg != nil {
+		if err := cg.AddProcess(cmd.Process.Pid); err != nil {
+			_ = cmd.Process.Kill()
+			return fmt.Errorf("error al asignar proceso a cgroup: %w", err)
+		}
+	}
+
+	return cmd.Wait()
 }
 
 // ChildInit se ejecuta dentro del nuevo namespace (PID 1 del nuevo árbol).
