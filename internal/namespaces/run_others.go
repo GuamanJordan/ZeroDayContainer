@@ -28,6 +28,7 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 type ContainerOpts struct {
 	ReadOnly  bool
 	EnableNet bool
+	EnableNAT bool
 	Cgroups   cgroups.Config
 }
 

@@ -38,6 +38,7 @@ func main() {
 	case "run", "run-pivot":
 		readOnly := false
 		enableNet := false
+		enableNAT := false
 		var cgCfg cgroups.Config
 		i := 2
 		for i < len(os.Args) {
@@ -46,6 +47,10 @@ func main() {
 				readOnly = true
 				i++
 			} else if arg == "--net" {
+				enableNet = true
+				i++
+			} else if arg == "--nat" {
+				enableNAT = true
 				enableNet = true
 				i++
 			} else if strings.HasPrefix(arg, "--memory=") {
@@ -77,6 +82,7 @@ func main() {
 		opts := namespaces.ContainerOpts{
 			ReadOnly:  readOnly,
 			EnableNet: enableNet,
+			EnableNAT: enableNAT,
 			Cgroups:   cgCfg,
 		}
 		if err := namespaces.RunPivotRootWithOptions(rootfsPath, opts, cmdPath, cmdArgs); err != nil {
@@ -133,6 +139,7 @@ func printUsage() {
 	fmt.Println("    Opciones:")
 	fmt.Println("      --read-only, -ro           Monta el rootfs en modo solo lectura")
 	fmt.Println("      --net                      Aísla la red con network namespace y par de interfaces veth")
+	fmt.Println("      --nat                      Conecta al bridge mc0 y habilita NAT para salida a internet")
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")
 	fmt.Println("      --cpus=<cores>             Límite de CPU cores (ej: 0.5, 1.0)")
 	fmt.Println("      --pids=<max>               Límite de procesos concurrentes (ej: 50)")
