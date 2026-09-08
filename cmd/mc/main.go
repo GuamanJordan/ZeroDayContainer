@@ -40,6 +40,7 @@ func main() {
 		readOnly := false
 		enableNet := false
 		enableNAT := false
+		enableOverlay := false
 		var cgCfg cgroups.Config
 		i := 2
 		for i < len(os.Args) {
@@ -53,6 +54,9 @@ func main() {
 			} else if arg == "--nat" {
 				enableNAT = true
 				enableNet = true
+				i++
+			} else if arg == "--overlay" {
+				enableOverlay = true
 				i++
 			} else if strings.HasPrefix(arg, "--memory=") {
 				cgCfg.MemoryLimit = strings.TrimPrefix(arg, "--memory=")
@@ -81,10 +85,11 @@ func main() {
 		cmdPath := os.Args[i+1]
 		cmdArgs := os.Args[i+2:]
 		opts := namespaces.ContainerOpts{
-			ReadOnly:  readOnly,
-			EnableNet: enableNet,
-			EnableNAT: enableNAT,
-			Cgroups:   cgCfg,
+			ReadOnly:      readOnly,
+			EnableNet:     enableNet,
+			EnableNAT:     enableNAT,
+			EnableOverlay: enableOverlay,
+			Cgroups:       cgCfg,
 		}
 		if err := namespaces.RunPivotRootWithOptions(rootfsPath, opts, cmdPath, cmdArgs); err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
@@ -191,6 +196,7 @@ func printUsage() {
 	fmt.Println("  run [opciones] <rootfs_path> <comando> [args...] Lanza un contenedor completo aislado con pivot_root")
 	fmt.Println("    Opciones:")
 	fmt.Println("      --read-only, -ro           Monta el rootfs en modo solo lectura")
+	fmt.Println("      --overlay                  Monta una capa OverlayFS efímera sobre el rootfs base")
 	fmt.Println("      --net                      Aísla la red con network namespace y par de interfaces veth")
 	fmt.Println("      --nat                      Conecta al bridge mc0 y habilita NAT para salida a internet")
 	fmt.Println("      --memory=<limite>          Límite de memoria (ej: 50m, 1g)")

@@ -26,10 +26,11 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 
 // ContainerOpts define las opciones de aislamiento.
 type ContainerOpts struct {
-	ReadOnly  bool
-	EnableNet bool
-	EnableNAT bool
-	Cgroups   cgroups.Config
+	ReadOnly      bool
+	EnableNet     bool
+	EnableNAT     bool
+	EnableOverlay bool
+	Cgroups       cgroups.Config
 }
 
 // RunPivotRoot en sistemas no-Linux retorna un error de incompatibilidad.

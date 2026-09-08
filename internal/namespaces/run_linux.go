@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -69,10 +70,11 @@ func RunChroot(newRoot string, cmdPath string, args []string) error {
 
 // ContainerOpts define las opciones completas de aislamiento de un contenedor.
 type ContainerOpts struct {
-	ReadOnly  bool
-	EnableNet bool
-	EnableNAT bool
-	Cgroups   cgroups.Config
+	ReadOnly      bool
+	EnableNet     bool
+	EnableNAT     bool
+	EnableOverlay bool
+	Cgroups       cgroups.Config
 }
 
 // RunPivotRoot lanza `cmdPath args...` aislando el sistema de archivos raíz mediante pivot_root.
@@ -95,12 +97,32 @@ func RunPivotRootWithOptions(newRoot string, opts ContainerOpts, cmdPath string,
 		return fmt.Errorf("se debe especificar un comando para ejecutar")
 	}
 
+	targetRoot := newRoot
+	if opts.EnableOverlay {
+		overlayBase := filepath.Join(os.TempDir(), "mc", fmt.Sprintf("overlay-%d", time.Now().UnixNano()))
+		cfg := rootfs.OverlayConfig{
+			LowerDir:  newRoot,
+			UpperDir:  filepath.Join(overlayBase, "upper"),
+			WorkDir:   filepath.Join(overlayBase, "work"),
+			MergedDir: filepath.Join(overlayBase, "merged"),
+		}
+		if err := rootfs.MountOverlay(cfg); err != nil {
+			return fmt.Errorf("error al inicializar overlayfs: %w", err)
+		}
+		defer func() {
+			_ = rootfs.UnmountOverlay(cfg.MergedDir)
+			_ = os.RemoveAll(overlayBase)
+		}()
+		targetRoot = cfg.MergedDir
+	}
+
 	initArgs := []string{"child-init-pivot"}
 	if opts.ReadOnly {
 		initArgs = append(initArgs, "--read-only")
 	}
-	initArgs = append(initArgs, newRoot, cmdPath)
+	initArgs = append(initArgs, targetRoot, cmdPath)
 	initArgs = append(initArgs, args...)
+
 
 	cmd := exec.Command("/proc/self/exe", initArgs...)
 	cmd.Stdin = os.Stdin
